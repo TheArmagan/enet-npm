@@ -1,4 +1,3 @@
-EMCC=`./find-emcc.py`/emcc
 #todo - refactor src/library_inet.js and src/library_node_sockets.js to handle closure compiler before enabling it
 OPTIMISE= -O2 --closure 0 -s ASM_JS=1 --llvm-opts 1 --memory-init-file 0
 ENET_SOURCE=./src/enet
@@ -47,10 +46,9 @@ EXPORTED_FUNCTIONS= -s EXPORTED_FUNCTIONS="[ \
 	'_jsapi_peer_get_reliableDataInTransit' ]"
 
 module:
-	$(EMCC) src/jsapi.c $(ENET_SOURCE)/*.c -I$(ENET_SOURCE)/include \
+	emcc src/jsapi.c $(ENET_SOURCE)/callbacks.c $(ENET_SOURCE)/compress.c $(ENET_SOURCE)/host.c $(ENET_SOURCE)/list.c $(ENET_SOURCE)/packet.c $(ENET_SOURCE)/peer.c $(ENET_SOURCE)/protocol.c $(ENET_SOURCE)/unix.c -I$(ENET_SOURCE)/include \
 		--pre-js src/enet_pre.js -o build/enet_.js $(OPTIMISE) \
 		--js-library src/library_node_sockets.js --js-library src/library_inet.js \
-		-s LINKABLE=1 $(EXPORTED_FUNCTIONS) -s RESERVED_FUNCTION_POINTERS=128 -s CHROME_SOCKETS=1 \
+		-s LINKABLE=1 $(EXPORTED_FUNCTIONS) -s RESERVED_FUNCTION_POINTERS=128 \
 		-s ALLOW_MEMORY_GROWTH=1
-	cat src/wrap_header.js build/enet_.js src/wrap_footer.js > build/enet.js
-	rm build/enet_.js
+	

@@ -8,7 +8,9 @@
     "protocol",
     "udp",
     "network"
-  ],
+  ],"scripts": {
+    "build": "make"
+  },
   "homepage": "https://github.com/mnaamani/enet-npm",
   "author": {
     "name": "Mokhtar Naamani",

@@ -66,7 +66,7 @@ jsapi_enet_host_from_socket (ENetSocket sock, const ENetAddress * address, size_
 	host -> peerCount = peerCount;
 	host -> commandCount = 0;
 	host -> bufferCount = 0;
-	host -> checksum = NULL;
+	host -> checksum = enet_crc32; // set to enet_crc32 for growtopia
 	host -> receivedAddress.host = ENET_HOST_ANY;
 	host -> receivedAddress.port = 0;
 	host -> receivedData = NULL;

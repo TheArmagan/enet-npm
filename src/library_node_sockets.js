@@ -32,16 +32,16 @@ mergeInto(LibraryManager.library, {
         return (addr & 0xff) + '.' + ((addr >> 8) & 0xff) + '.' + ((addr >> 16) & 0xff) + '.' + ((addr >> 24) & 0xff)
     },
     DGRAM:function(){
-#if CHROME_SOCKETS
+
         if((typeof window !== 'undefined') && window["chrome"] && window["chrome"]["socket"]) return NodeSockets.ChromeDgram();
-#endif
+
         if(typeof require !== 'undefined') return require("dgram");//node or browserified
         assert(false,"no dgram sockets backend found!");
     },
     NET:function(){
-#if CHROME_SOCKETS
+
         if((typeof window !== 'undefined') && window["chrome"] && window["chrome"]["socket"]) return NodeSockets.ChromeNet();
-#endif
+
         if(typeof require !== 'undefined') return require("net");//node or browserified
         assert(false, "no tcp socket backend found!");
     },
@@ -53,7 +53,7 @@ mergeInto(LibraryManager.library, {
       }
       return uint8Array;
     },
-#if CHROME_SOCKETS
+
     ChromeNet: undefined,       /* use https://github.com/GoogleChrome/net-chromeify.git ? (Apache license)*/
     ChromeDgram: function(){
         /*
@@ -82,9 +82,7 @@ mergeInto(LibraryManager.library, {
                 delete self.__pending;
                 //start polling socket for incoming datagrams
                 self.__poll_interval = setInterval(do_recv,30);
-#if SOCKET_DEBUG
-                console.log("chrome socket bound to:",JSON.stringify(self.address()));
-#endif
+
             });
 
             if(msg_evt_cb) self["on"]("message",msg_evt_cb);
@@ -155,9 +153,9 @@ mergeInto(LibraryManager.library, {
 
         UDPSocket.prototype["setBroadcast"] = function(flag){
             //do chrome udp sockets support broadcast?
-#if SOCKET_DEBUG
+
             console.log("setting broadcast on chrome socket to:",flag);
-#endif
+
         };
 
         UDPSocket.prototype["send"] = function(buff, offset, length, port, address, callback){
@@ -201,7 +199,7 @@ mergeInto(LibraryManager.library, {
          return exports;
 
         },
-#endif
+
    },
    close__deps: ['$FS', '__setErrNo', '$ERRNO_CODES'],
    close: function(fildes) {
@@ -277,15 +275,11 @@ mergeInto(LibraryManager.library, {
             ___setErrNo(ERRNO_CODES.EPROTOTYPE);
             return -1;
          }
-#if SOCKET_DEBUG
-        console.log("created socket fd:",fd);
-#endif
+
          return fd;
         }catch(e){
             ___setErrNo(ERRNO_CODES.EACCES);
-#if SOCKET_DEBUG
-            console.log(e);
-#end if
+
             return -1;
         }
     },
@@ -433,9 +427,7 @@ mergeInto(LibraryManager.library, {
         }
         var iov = {{{ makeGetValue('msg', C_STRUCTS.msghdr.msg_iov, 'i8*') }}};
         var num = {{{ makeGetValue('msg', C_STRUCTS.msghdr.msg_iovlen, 'i32') }}};
-#if SOCKET_DEBUG
-          Module.print('sendmsg vecs: ' + num);
-#endif
+
         var totalSize = 0;
         for (var i = 0; i < num; i++) {
           totalSize += {{{ makeGetValue('iov', '8*i + 4', 'i32') }}};
@@ -444,9 +436,7 @@ mergeInto(LibraryManager.library, {
         var ret = 0;
         for (var i = 0; i < num; i++) {
           var currNum = {{{ makeGetValue('iov', '8*i + 4', 'i32') }}};
-#if SOCKET_DEBUG
-         Module.print('sendmsg curr size: ' + currNum);
-#endif
+
           if (!currNum) continue;
           var currBuf = {{{ makeGetValue('iov', '8*i', 'i8*') }}};
           buffer.set(HEAPU8.subarray(currBuf, currBuf+currNum), ret);
@@ -481,9 +471,7 @@ mergeInto(LibraryManager.library, {
         }
         var buffer = info.inQueue.shift();
         var bytes = buffer.length;
-#if SOCKET_DEBUG
-        Module.print('recvmsg bytes: ' + bytes);
-#endif
+
         var name = {{{ makeGetValue('msg', C_STRUCTS.msghdr.msg_name, '*') }}};
         var namelen = {{{ makeGetValue('msg', C_STRUCTS.msghdr.msg_namelen, 'i32') }}};
         assert( info.addrlen === namelen );
@@ -516,16 +504,12 @@ mergeInto(LibraryManager.library, {
         var bufferPos = 0;
         for (var i = 0; i < num && bytes > 0; i++) {
           var currNum = {{{ makeGetValue('iov', '8*i + 4', 'i32') }}};
-#if SOCKET_DEBUG
-          Module.print('recvmsg loop ' + [i, num, bytes, currNum]);
-#endif
+
           if (!currNum) continue;
           currNum = Math.min(currNum, bytes); // XXX what should happen when we partially fill a buffer..?
           bytes -= currNum;
           var currBuf = {{{ makeGetValue('iov', '8*i', 'i8*') }}};
-#if SOCKET_DEBUG
-          Module.print('recvmsg call recv ' + currNum);
-#endif
+
           HEAPU8.set(buffer.subarray(bufferPos, bufferPos + currNum), currBuf);
           bufferPos += currNum;
         }
@@ -533,9 +517,7 @@ mergeInto(LibraryManager.library, {
           // This is tcp (reliable), so if not all was read, keep it
           if (bufferPos < bytes) {
             info.inQueue.unshift(buffer.subarray(bufferPos));
-#if SOCKET_DEBUG
-            Module.print('recvmsg: put back: ' + (bytes - bufferPos));
-#endif
+
           }
         }
         return ret;
@@ -566,16 +548,12 @@ mergeInto(LibraryManager.library, {
                     break;
             }
         }
-#if SOCKET_DEBUG
-        Module.print('recv: ' + [Array.prototype.slice.call(buffer)]);
-#endif
+
         if (len < buffer.length) {
           if (info.stream) {
             // This is tcp (reliable), so if not all was read, keep it
             info.inQueue.unshift(buffer.subarray(len));
-#if SOCKET_DEBUG
-            Module.print('recv: put back: ' + (len - buffer.length));
-#endif
+
           }
           buffer = buffer.subarray(0, len);
         }
@@ -615,9 +593,7 @@ mergeInto(LibraryManager.library, {
     },
     
     setsockopt: function(d, level, optname, optval, optlen) {
-#if SOCKET_DEBUG
-        console.log('ignoring setsockopt command');
-#endif
+
         return 0;
     },
     
@@ -695,9 +671,6 @@ mergeInto(LibraryManager.library, {
           }
           
         }catch(e){
-#if SOCKET_DEBUG
-            console.log(e);
-#endif
             return -1;
         }
         return 0;
@@ -716,9 +689,7 @@ mergeInto(LibraryManager.library, {
         info.server = info.socket;//mark it as a listening socket
         info.connQueue = [];
         info.socket["listen"](info.local_port||0,info.local_host,backlog,function(){
-#if SOCKET_DEBUG
-            console.log('listening on',info.local_port||0,info.local_host);
-#endif
+
         });
         info.socket["on"]("connection",function(socket){
              info.connQueue.push(socket);
